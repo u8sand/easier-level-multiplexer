@@ -153,66 +153,70 @@ export class LevelMultiplexer<
     const emitter = new EasierLevelDOWNEmitter<string, V>()
 
     // Catch changes on store and resolve pointers before forwarding
-    this._store.changes().onPut(
-      async (key, val) => emitter.emit(key, await this.get(key))
-    ).onDel(
-      (key) => emitter.emit(key)
-    ).onBatch(
-      async (array) => emitter.emitBatch(
-        await Promise.all(
-          array.map(async (op) => {
-            if (op.type === 'put') {
-              return {
-                type: op.type,
-                key: op.key,
-                value: await this.get(op.key),
-              }
-            } else if (op.type === 'del') {
-              return {
-                type: op.type,
-                key: op.key
-              }
-            } else
-              throw new Error(`Unrecognized batch operation '${(op as { type: string }).type}'`)
-          })
-        )
-      )
-    )
-
-    // Catch changes on multiplexed stores and update our records before forwarding
-    for (const store of Object.keys(this._stores)) {
-      this._stores[store].changes().onPut(
-        async (key, val) => emitter.emit(await this._post(key, val), val)
+    if (this._store.changes !== undefined) {
+      this._store.changes().onPut(
+        async (key, val) => emitter.emit(key, await this.get(key))
       ).onDel(
-        async (key) => {
-          const existingKey = await this._del(key)
-          if (existingKey !== undefined)
-            emitter.emit(existingKey)
-        }
+        (key) => emitter.emit(key)
       ).onBatch(
         async (array) => emitter.emitBatch(
-          (await Promise.all(
+          await Promise.all(
             array.map(async (op) => {
               if (op.type === 'put') {
                 return {
                   type: op.type,
-                  key: await this._post(op.key, op.value),
-                  value: op.value,
+                  key: op.key,
+                  value: await this.get(op.key),
                 }
               } else if (op.type === 'del') {
-                const existingKey = await this._del(op.key)
-                if (existingKey !== undefined) {
-                  return {
-                    type: op.type,
-                    key: await this._del(op.key)
-                  }
+                return {
+                  type: op.type,
+                  key: op.key
                 }
               } else
                 throw new Error(`Unrecognized batch operation '${(op as { type: string }).type}'`)
             })
-          )).filter((op) => op !== undefined)
+          )
         )
       )
+    }
+
+    // Catch changes on multiplexed stores and update our records before forwarding
+    for (const store of Object.keys(this._stores)) {
+      if (this._stores[store].changes !== undefined) {
+        this._stores[store].changes().onPut(
+          async (key, val) => emitter.emit(await this._post(key, val), val)
+        ).onDel(
+          async (key) => {
+            const existingKey = await this._del(key)
+            if (existingKey !== undefined)
+              emitter.emit(existingKey)
+          }
+        ).onBatch(
+          async (array) => emitter.emitBatch(
+            (await Promise.all(
+              array.map(async (op) => {
+                if (op.type === 'put') {
+                  return {
+                    type: op.type,
+                    key: await this._post(op.key, op.value),
+                    value: op.value,
+                  }
+                } else if (op.type === 'del') {
+                  const existingKey = await this._del(op.key)
+                  if (existingKey !== undefined) {
+                    return {
+                      type: op.type,
+                      key: await this._del(op.key)
+                    }
+                  }
+                } else
+                  throw new Error(`Unrecognized batch operation '${(op as { type: string }).type}'`)
+              })
+            )).filter((op) => op !== undefined)
+          )
+        )
+      }
     }
 
     return emitter
