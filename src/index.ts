@@ -14,11 +14,15 @@ export interface LevelMultiplexerOptions<V> {
   // The base store
   store: AbstractLevelDOWN<string, any>
   options?: any
+  // Whether we are responsible for opening this store
+  open?: boolean
 
   // The multi-store label-store mapping
   stores: Array<{
     key: string
     store: EasierLevelDOWN<string, V>
+    // Whether we are responsible for opening this store
+    open?: boolean
     options?: any
   }>
 
@@ -37,19 +41,18 @@ export class LevelMultiplexer<
   _mapper: (val: V) => string[]
 
   constructor(options: LevelMultiplexerOptions<V>) {
-    this._options = options
-    this.changes = this.changes.bind(this)
+    this._options = {...options}
   }
 
   async open() {
     this._store = new LevelDOWNEasier(this._options.store)
-    if (this._store.open !== undefined)
+    if (this._store.open !== undefined && this._options.open !== false)
       await this._store.open(this._options.options)
 
     this._stores = {}
     for (const store of this._options.stores) {
       this._stores[store.key] = new LevelDOWNEasier(store.store)
-      if (this._stores[store.key].open !== undefined)
+      if (this._stores[store.key].open !== undefined && store.open !== false)
         await this._stores[store.key].open(store.options)
     }
 
@@ -57,12 +60,12 @@ export class LevelMultiplexer<
   }
 
   async close() {
-    for (const store of Object.values(this._stores)) {
-      if (store.close !== undefined)
-        await store.close()
+    for (const store of this._options.stores) {
+      if (this._stores[store.key].close !== undefined && store.open !== false)
+        await this._stores[store.key].close()
     }
 
-    if(this._store.close !== undefined)
+    if (this._store.close !== undefined && this._options.open !== false)
       await this._store.close()
   }
 
