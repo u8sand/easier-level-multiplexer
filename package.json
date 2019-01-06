@@ -1,0 +1,35 @@
+{
+  "name": "easier-level-multiplexer",
+  "version": "1.0.0",
+  "description": "Multiplex leveldowns--accessing values from multiple stores through one",
+  "author": "Daniel J. B. Clarke <u8sand@gmail.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "public": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/u8sand/easier-level-multiplexer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/u8sand/easier-level-multiplexer/issues"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "compile": "tsc",
+    "prepublishOnly": "npm run compile && npm test",
+    "test": "tape -r ts-node/register src/**/*.test.ts"
+  },
+  "dependencies": {
+    "easier-abstract-leveldown": "^1.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "memdown": "^3.0.0",
+    "tape": "^4.9.1",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2"
+  }
+}
