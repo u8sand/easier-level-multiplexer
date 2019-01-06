@@ -1,6 +1,6 @@
 {
   "name": "easier-level-multiplexer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Multiplex leveldowns--accessing values from multiple stores through one",
   "author": "Daniel J. B. Clarke <u8sand@gmail.com>",
   "license": "MIT",

@@ -38,6 +38,7 @@ export class LevelMultiplexer<
 
   constructor(options: LevelMultiplexerOptions<V>) {
     this._options = options
+    this.changes = this.changes.bind(this)
   }
 
   async open() {
