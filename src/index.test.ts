@@ -1,8 +1,9 @@
+import suite from 'easier-abstract-leveldown/dist/tests'
 import test from 'tape'
 import levelmultiplexer from '.'
 import memdown from 'memdown'
 
-const testCommon = require('abstract-leveldown/test/common')({
+suite({
   test: test,
   factory: () => levelmultiplexer({
     store: memdown(),
@@ -39,19 +40,4 @@ const testCommon = require('abstract-leveldown/test/common')({
       return ret
     }
   }) as any,
-  snapshots: false,
-  createIfMissing: false,
-  errorIfExists: false,
 })
-
-// pass
-require('abstract-leveldown/test/open-test').args(test, testCommon)
-require('abstract-leveldown/test/open-test').open(test, testCommon)
-require('abstract-leveldown/test/del-test').all(test, testCommon)
-require('abstract-leveldown/test/get-test').all(test, testCommon)
-require('abstract-leveldown/test/put-test').all(test, testCommon)
-require('abstract-leveldown/test/batch-test').all(test, testCommon)
-require('abstract-leveldown/test/chained-batch-test').all(test, testCommon)
-require('abstract-leveldown/test/put-get-del-test').all(test, testCommon)
-require('abstract-leveldown/test/iterator-test').all(test, testCommon)
-require('abstract-leveldown/test/iterator-range-test').all(test, testCommon)
