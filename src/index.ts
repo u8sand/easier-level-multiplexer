@@ -73,17 +73,37 @@ export class LevelMultiplexer<
 
   async get(key: string): Promise<V> {
     const ptrs = JSON.parse(await this._store.get(key))
-    const vals = await Promise.all<V>(ptrs.map(
-      (ptr) => this._stores[ptr.store].get(ptr.key)
-    ))
+    const recreate = []
+    const vals = (await Promise.all<V>(ptrs.map(
+      async (ptr) => {
+        try {
+          return await this._stores[ptr.store].get(ptr.key)
+        } catch(e) {
+          if (String(e) === 'Error: NotFound') {
+            // It wasn't in this store, it should be [re-]created
+            recreate.push(ptr)
+            return undefined
+          } else {
+            throw e
+          }
+        }
+      }
+    ))).filter((v) => v !== undefined)
+
+    if (vals.length === 0) // Couldn't be found anywhere
+      throw new Error('NotFound')
+
     const unique_vals = unique<string, V>(vals, (v: V) => JSON.stringify(v))
 
-    if (unique_vals.length <= 0)
-      throw new Error('NotFound')
-    else if (unique_vals.length > 1) { // collisions
+    if (unique_vals.length > 1) { // collisions
       console.warn(unique_vals.length + ' collision(s) occured, dupes spawned')
       await Promise.all(unique_vals.slice(1).map(this.post))
     }
+
+    // Recreate the value in the stores that are missing it
+    for (const ptr of recreate)
+      await this._stores[ptr.store].put(ptr.key, unique_vals[0])
+
     return unique_vals[0]
   }
 
