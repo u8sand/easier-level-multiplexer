@@ -42,21 +42,23 @@ export class LevelMultiplexer<
 
   constructor(options: LevelMultiplexerOptions<V>) {
     this._options = {...options}
+    this._store = new LevelDOWNEasier(this._options.store)
+
+    this._stores = {}
+    for (const store of this._options.stores)
+      this._stores[store.key] = new LevelDOWNEasier(store.store)
+
+    this._mapper = this._options.mapper
   }
 
   async open() {
-    this._store = new LevelDOWNEasier(this._options.store)
     if (this._store.open !== undefined && this._options.open !== false)
       await this._store.open(this._options.options)
 
-    this._stores = {}
     for (const store of this._options.stores) {
-      this._stores[store.key] = new LevelDOWNEasier(store.store)
       if (this._stores[store.key].open !== undefined && store.open !== false)
         await this._stores[store.key].open(store.options)
     }
-
-    this._mapper = this._options.mapper
   }
 
   async close() {
